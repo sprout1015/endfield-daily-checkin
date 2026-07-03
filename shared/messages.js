@@ -16,6 +16,7 @@ export const MESSAGE = {
   EVENT_UNAVAILABLE: "EVENT_UNAVAILABLE",
   GAME_ROLE_NOT_LINKED: "GAME_ROLE_NOT_LINKED",
   MANUAL_COOLDOWN: "MANUAL_COOLDOWN",
+  CHECKIN_IN_PROGRESS: "CHECKIN_IN_PROGRESS",
   UNKNOWN_CHECKIN_ERROR: "UNKNOWN_CHECKIN_ERROR"
 };
 
@@ -38,6 +39,7 @@ export const MESSAGE_TEXT = {
   [MESSAGE.EVENT_UNAVAILABLE]: "현재 출석 이벤트를 사용할 수 없습니다. 공식 출석 페이지에서 이벤트 상태를 확인하세요.",
   [MESSAGE.GAME_ROLE_NOT_LINKED]: "현재 계정에 연동된 게임 계정이 없어 출석 체크를 할 수 없습니다.",
   [MESSAGE.MANUAL_COOLDOWN]: "너무 빠르게 다시 시도했습니다. 잠시 후 다시 눌러주세요.",
+  [MESSAGE.CHECKIN_IN_PROGRESS]: "이미 다른 출석 요청이 진행 중입니다. 잠시 후 확인해주세요.",
   [MESSAGE.UNKNOWN_CHECKIN_ERROR]: "알 수 없는 출석 체크 오류가 발생했습니다."
 };
 

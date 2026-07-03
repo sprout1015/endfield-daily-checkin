@@ -66,7 +66,8 @@ const STATUS_LABELS = {
   game_role_not_linked: ["게임 계정 연동 필요", "warn"],
   error: ["오류", "warn"],
   disabled: ["자동 비활성", "warn"],
-  cooldown: ["잠시 후 재시도", "warn"]
+  cooldown: ["잠시 후 재시도", "warn"],
+  locked: ["처리 중", "warn"]
 };
 
 statusTitle.textContent = TEXT.loadingTitle;
