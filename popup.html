@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>&#50644;&#46300;&#54596;&#46300; &#52636;&#49437; &#52404;&#53356;</title>
+    <style>
+      :root {
+        --bg: #f4f5f1;
+        --ink: #101010;
+        --muted: #747871;
+        --line: #d8dbd2;
+        --yellow: #ebff00;
+        --yellow-strong: #d7ed00;
+        --panel: #ffffff;
+        --danger: #d72d2d;
+        --ok: #178a46;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 360px;
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 13px;
+      }
+
+      .hero {
+        position: relative;
+        min-height: 104px;
+        padding: 14px 14px 12px;
+        overflow: hidden;
+        background:
+          linear-gradient(118deg, rgba(235, 255, 0, 0.9) 0 26%, rgba(255, 255, 255, 0.86) 26% 62%, rgba(235, 255, 0, 0.78) 62% 100%),
+          repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 9px);
+        border-bottom: 3px solid var(--yellow);
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 62% 34%, rgba(0, 0, 0, 0.14), transparent 2px),
+          radial-gradient(circle at 67% 40%, rgba(0, 0, 0, 0.12), transparent 2px),
+          radial-gradient(circle at 72% 46%, rgba(0, 0, 0, 0.10), transparent 2px);
+        background-size: 18px 18px;
+        opacity: 0.45;
+      }
+
+      .brand {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .mark {
+        width: 42px;
+        height: 42px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        object-fit: contain;
+      }
+
+      h1 {
+        display: inline-block;
+        margin: 0;
+        padding: 2px 8px 4px;
+        background: #fff;
+        color: #000;
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .tag {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 32px 2px 6px;
+        background: #000;
+        color: var(--yellow);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .slash {
+        position: absolute;
+        right: 16px;
+        bottom: 12px;
+        width: 52px;
+        height: 12px;
+        background: repeating-linear-gradient(120deg, #000 0 6px, transparent 6px 10px);
+      }
+
+      main {
+        padding: 12px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 34px;
+        padding: 6px 10px;
+        background: #111;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 900;
+      }
+
+      .section-title span {
+        color: var(--yellow);
+      }
+
+      .status-body {
+        padding: 12px;
+      }
+
+      .summary {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .summary strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .message {
+        margin-top: 4px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        min-width: 78px;
+        border: 1px solid #222;
+        border-radius: 0;
+        padding: 4px 7px;
+        background: var(--yellow);
+        color: #000;
+        font-size: 12px;
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .badge.warn {
+        background: #fff;
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+
+      .control-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 14px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        background: #fafbf7;
+      }
+
+      .control-title {
+        font-weight: 800;
+      }
+
+      .control-sub {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .switch {
+        position: relative;
+        flex: 0 0 auto;
+        width: 52px;
+        height: 28px;
+      }
+
+      .switch input {
+        position: absolute;
+        opacity: 0;
+      }
+
+      .slider {
+        position: absolute;
+        inset: 0;
+        border: 2px solid #111;
+        background: #d8dbd2;
+        cursor: pointer;
+        transition: background 0.16s ease;
+      }
+
+      .slider::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        background: #111;
+        transition: transform 0.16s ease;
+      }
+
+      .switch input:checked + .slider {
+        background: var(--yellow);
+      }
+
+      .switch input:checked + .slider::before {
+        transform: translateX(24px);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .metric {
+        min-height: 56px;
+        border: 1px solid var(--line);
+        padding: 8px;
+        background: #fff;
+      }
+
+      .metric dt {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .metric dd {
+        margin: 4px 0 0;
+        min-width: 0;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      button {
+        width: 100%;
+        height: 42px;
+        margin-top: 12px;
+        border: 2px solid #111;
+        border-radius: 0;
+        background: var(--yellow);
+        color: #000;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--yellow-strong);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      .hint {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="brand">
+        <img class="mark" src="icons/icon48.png" alt="">
+        <div>
+          <h1>&#52636;&#49437; &#52404;&#53356;</h1>
+          <div class="tag">ARKNIGHTS: ENDFIELD</div>
+        </div>
+      </div>
+      <div class="slash"></div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="section-title">
+          <div>&#51088;&#46041; &#52636;&#49437; <span id="autoTitle">&#54876;&#49457;</span></div>
+          <div id="todayBadge" class="badge">-</div>
+        </div>
+
+        <div class="status-body">
+          <div class="summary">
+            <div>
+              <strong id="statusTitle">&#48520;&#47084;&#50724;&#45716; &#51473;...</strong>
+              <div class="message" id="statusMessage">&#54869;&#51109; &#49345;&#53468;&#47484; &#54869;&#51064;&#54616;&#44256; &#51080;&#49845;&#45768;&#45796;</div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div>
+              <div class="control-title">&#51088;&#46041; &#52636;&#49437;</div>
+              <div class="control-sub" id="autoSub">&#47588;&#51068; 00:05 UTC+8 &#44592;&#51456; &#51088;&#46041; &#49892;&#54665;</div>
+            </div>
+            <label class="switch" aria-label="Auto check-in">
+              <input id="autoToggle" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="grid">
+            <dl class="metric">
+              <dt>&#52636;&#49437; &#54788;&#54889;</dt>
+              <dd id="completionState">-</dd>
+            </dl>
+            <dl class="metric">
+              <dt>&#45796;&#51020; &#51088;&#46041; &#49892;&#54665;</dt>
+              <dd id="nextRun">-</dd>
+            </dl>
+            <dl class="metric">
+              <dt>&#52636;&#49437; &#51456;&#48708;</dt>
+              <dd id="credentialState">-</dd>
+            </dl>
+            <dl class="metric">
+              <dt>&#47560;&#51648;&#47561; &#52404;&#53356;</dt>
+              <dd id="lastCheck">-</dd>
+            </dl>
+          </div>
+
+          <button id="checkButton" type="button">&#51648;&#44552; &#52404;&#53356;</button>
+          <p class="hint" id="hintText">
+            &#51064;&#51613; &#51221;&#48372;&#44032; &#50630;&#51004;&#47732; &#44277;&#49885; &#52636;&#49437; &#54168;&#51060;&#51648;&#50640; &#47196;&#44536;&#51064;&#54620; &#46244; &#54620; &#48264; &#49352;&#47196;&#44256;&#52840;&#54616;&#49464;&#50836;.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

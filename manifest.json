@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Endfield Daily Check-in",
+  "version": "1.3.0",
+  "description": "Arknights: Endfield daily sign-in helper. 로그인 상태에서 엔드필드 일일 출석을 자동으로 처리합니다.",
+  "permissions": [
+    "alarms",
+    "storage",
+    "cookies",
+    "notifications",
+    "webRequest",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "https://game.skport.com/*",
+    "https://zonai.skport.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Endfield Daily Check-in",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

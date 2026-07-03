@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "set", "value": "https://game.skport.com" },
+        { "header": "Referer", "operation": "set", "value": "https://game.skport.com/" },
+        { "header": "Sec-Fetch-Site", "operation": "set", "value": "same-site" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||zonai.skport.com/web/v1/",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]
