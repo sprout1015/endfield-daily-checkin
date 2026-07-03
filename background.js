@@ -29,6 +29,7 @@ const IMMEDIATE_RETRY_DELAY_MS = 3000;
 const RETRY_ALARM_INTERVAL_MINUTES = 45;
 const MAX_DAILY_RETRY_ALARMS = 3;
 const MANUAL_CHECKIN_COOLDOWN_MS = 10000;
+const CHECKIN_LOCK_TTL_MS = 60000;
 const RETRYABLE_STATUSES = ["reward_not_granted", "server_busy", "network_error", "login_rate_limited", "error"];
 let activeCheckin = null;
 
@@ -115,20 +116,22 @@ async function handleCapturedCredentials(details) {
     "lastStatus"
   ]);
   const nextCred = cred || saved.cred;
-  const credChanged = Boolean(cred && cred !== saved.cred);
-  const roleChanged = Boolean(roleId && roleId !== saved.roleId);
-  const accountChanged = credChanged || roleChanged;
-  const nextRoleId = roleId || (credChanged ? "" : saved.roleId);
+  const nextRoleId = roleId || saved.roleId;
   const hadCredentials = Boolean(saved.cred && saved.roleId);
   const hasCredentials = Boolean(nextCred && nextRoleId);
   const becameReady = !hadCredentials && hasCredentials;
+
+  // 계정이 실제로 바뀌었는지는 sk-game-role(게임 계정/캐릭터 식별자)로만 판단한다.
+  // cred(세션 토큰)는 같은 계정이어도 주기적으로 갱신될 수 있어서, cred만 바뀐 것을
+  // 계정 전환으로 취급하면 이미 완료된 오늘 출석까지 매번 다시 시도하게 된다.
+  const accountChanged = Boolean(roleId && saved.roleId && roleId !== saved.roleId);
+
   const updates = {
     credentialsCapturedAt: new Date().toISOString()
   };
 
   if (cred) updates.cred = cred;
   if (roleId) updates.roleId = roleId;
-  if (credChanged && !roleId) updates.roleId = "";
 
   if (accountChanged) {
     updates.lastCheckinDate = "";
@@ -221,7 +224,7 @@ async function runMissedCheckin() {
 function runCheckin(source = "manual") {
   if (activeCheckin) return activeCheckin;
 
-  activeCheckin = performCheckin(source)
+  activeCheckin = runCheckinWithLock(source)
     .then(async (result) => {
       await maybeScheduleRetryAlarm(result?.status);
       return result;
@@ -231,6 +234,30 @@ function runCheckin(source = "manual") {
     });
 
   return activeCheckin;
+}
+
+async function runCheckinWithLock(source) {
+  // activeCheckin은 서비스 워커가 켜져 있는 동안에만 유효한 메모리 값이라, 서비스
+  // 워커가 재시작되면(할 일이 없을 때 자동으로 꺼졌다 켜짐) 초기화된다. 그 재시작
+  // 타이밍에 다른 트리거가 겹치면 중복 요청이 나갈 수 있어, chrome.storage.local에
+  // 남기는 잠금으로 재시작에도 살아남는 보호를 추가한다. TTL은 한 번의 시도가
+  // 걸릴 수 있는 최대 시간(즉시 재시도 포함)보다 넉넉하게 잡아, 잠금이 영영 안
+  // 풀리는 경우를 방지한다.
+  const { checkinLockAt } = await chrome.storage.local.get("checkinLockAt");
+  const lockElapsedMs = checkinLockAt ? Date.now() - checkinLockAt : Infinity;
+
+  if (lockElapsedMs < CHECKIN_LOCK_TTL_MS) {
+    debugLog("runCheckin:skip:locked-by-another-run", { source, lockElapsedMs });
+    return { ok: true, status: "locked", message: MESSAGE.CHECKIN_IN_PROGRESS };
+  }
+
+  await chrome.storage.local.set({ checkinLockAt: Date.now() });
+
+  try {
+    return await performCheckin(source);
+  } finally {
+    await chrome.storage.local.remove("checkinLockAt");
+  }
 }
 
 function isTodayCompleted(status) {
