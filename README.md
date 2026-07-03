@@ -243,6 +243,14 @@ sec-fetch-site: none                            (기대값: same-site)
 
 이전 버전의 content script가 남아 있는 탭에서 확장 프로그램을 다시 로드하면 Chrome이 `Extension context invalidated`를 표시할 수 있습니다. 현재 구현은 content script를 사용하지 않으므로 확장 프로그램을 새로고침하고 기존 공식 페이지 탭도 새로고침하면 더 이상 새 오류가 쌓이지 않아야 합니다. 이미 기록된 오류는 `chrome://extensions/`의 오류 화면에서 삭제할 수 있습니다.
 
+## 개발 워크플로
+
+- **`main`**: 항상 실제로 로드해서 쓰는 안정 버전. 직접 커밋하지 않고 PR로만 병합합니다.
+- **작업 브랜치**: `fix/<slug>`, `feat/<slug>`, `docs/<slug>`처럼 작업 단위로 짧게 만들고, 끝나면 PR을 열어 `main`에 병합한 뒤 삭제합니다.
+- **병합 방식**: `--no-ff`(머지 커밋 유지, squash 금지) — 어떤 작업이 있었는지 이력으로 남기기 위함입니다.
+- **커밋 메시지**: `type: 설명` (`feat`/`fix`/`docs`/`chore`/`refactor`).
+- **버전**: `main`에 의미 있는 변경이 병합될 때마다 `manifest.json`의 `version`을 올리고 `vX.Y.Z` 태그를 남깁니다.
+
 ## 프로젝트 파일
 
 ```text
