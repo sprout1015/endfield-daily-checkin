@@ -1,0 +1,60 @@
+name: Endfield Notion 개발 로그
+
+# develop push마다(=--no-ff 병합 커밋 도착) 커밋을 읽어 Claude로 한국어 초안을 작성하고
+# Notion "📕 Library" DB에 상태=초안 페이지(카테고리=Endfield Extension 개발로그)로 게시한다.
+# RAGDeck의 notion-devlog 워크플로를 이식한 것(claude.ai 루틴은 커넥터 라우팅 한계로 대체).
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      from_sha:
+        description: "시작 커밋 SHA (선택, 비우면 자동 판별)"
+        required: false
+      to_sha:
+        description: "종료 커밋 SHA (선택, 기본 HEAD)"
+        required: false
+
+concurrency:
+  group: notion-devlog-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  devlog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 커밋 범위 판별(병합 커밋 부모 조회)에 전체 히스토리 필요
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치 (경량)
+        run: pip install anthropic requests python-dotenv
+
+      - name: Notion 개발 로그 생성
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NOTION_DEVLOG_TOKEN: ${{ secrets.NOTION_DEVLOG_TOKEN }}
+          NOTION_DEVLOG_DATABASE_ID: ${{ vars.NOTION_DEVLOG_DATABASE_ID }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          INPUT_FROM_SHA: ${{ github.event.inputs.from_sha }}
+          INPUT_TO_SHA: ${{ github.event.inputs.to_sha }}
+        run: |
+          # push 이벤트는 github.event.before를 우선 사용해 다중 직접 커밋 push도 범위를
+          # 놓치지 않는다(새 브랜치/force-push의 null SHA는 제외 — 스크립트 병합 커밋 판별로 폴백).
+          ARGS=()
+          if [ -n "$INPUT_FROM_SHA" ]; then
+            ARGS+=(--from-sha "$INPUT_FROM_SHA")
+          elif [ "$EVENT_NAME" = "push" ] && [ -n "$EVENT_BEFORE" ] \
+               && [ "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            ARGS+=(--from-sha "$EVENT_BEFORE")
+          fi
+          if [ -n "$INPUT_TO_SHA" ]; then
+            ARGS+=(--to-sha "$INPUT_TO_SHA")
+          fi
+          python scripts/notion_devlog.py "${ARGS[@]}"
