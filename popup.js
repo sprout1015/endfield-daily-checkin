@@ -144,10 +144,10 @@ function renderStatus(status) {
     ? `${formatServerDate(completionDate)} ${TEXT.doneSuffix}`
     : TEXT.notDone;
   nextRun.textContent = status.autoCheckinEnabled ? formatDateTime(status.nextRunAt) : TEXT.noSchedule;
-  credentialState.textContent = status.hasCred && status.hasRoleId ? TEXT.readyState : TEXT.refreshNeeded;
+  credentialState.textContent = isCredentialReady(status) ? TEXT.readyState : TEXT.refreshNeeded;
   lastCheck.textContent = formatDateTime(status.lastCheckinAt);
 
-  hintText.textContent = status.hasCred && status.hasRoleId ? TEXT.ready : TEXT.visitPage;
+  hintText.textContent = isCredentialReady(status) ? TEXT.ready : TEXT.visitPage;
 
   if (tone === "warn") {
     todayBadge.classList.add("warn");
@@ -248,10 +248,16 @@ function renderError(error) {
 }
 
 function initialMessage(status) {
-  if (!status.hasCred || !status.hasRoleId) {
+  if (!isCredentialReady(status)) {
     return TEXT.visitPage;
   }
   return TEXT.ready;
+}
+
+// cred는 헤더 스니핑으로 저장된 값(hasCred) 또는 공식 페이지 쿠키(hasCredCookie)
+// 어느 쪽이든 확보되면 준비된 것으로 본다. 단, sk-game-role은 여전히 필요하다.
+function isCredentialReady(status) {
+  return Boolean(status.hasCred || status.hasCredCookie) && Boolean(status.hasRoleId);
 }
 
 function labelFor(status) {

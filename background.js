@@ -19,6 +19,10 @@ const RETRY_ALARM = "endfield-checkin-retry";
 const CHECKIN_PATH = "/web/v1/game/endfield/attendance";
 const API_ORIGIN = "https://zonai.skport.com";
 const GAME_ORIGIN = "https://game.skport.com";
+// 공식 웹 페이지가 로그인 후 cred를 캐시해 두는 쿠키(localStorage에도 동일 값 존재).
+// webRequest 헤더 스니핑과 달리, 사용자가 공식 페이지에서 XHR을 유발하지 않아도
+// 로그인 세션이 살아 있는 한 이 쿠키로 최신 cred를 확보할 수 있다.
+const CRED_COOKIE_NAME = "SK_OAUTH_CRED_KEY";
 const LANGUAGE = "ko";
 const PLATFORM = "3";
 const VERSION_NAME = "1.0.0";
@@ -281,10 +285,13 @@ async function getStatus() {
   ]);
 
   const accountToken = await getAccountToken();
+  // 저장된 cred가 있으면 준비 상태가 이미 충족되므로 쿠키를 읽지 않는다(불필요한 조회 회피).
+  const credCookie = data.cred ? "" : await getCredFromCookie();
 
   return {
     ...data,
     hasCred: Boolean(data.cred),
+    hasCredCookie: Boolean(credCookie),
     hasRoleId: Boolean(data.roleId),
     hasAccountToken: Boolean(accountToken?.value),
     autoCheckinEnabled: data.autoCheckinEnabled !== false,
@@ -339,6 +346,21 @@ async function performCheckin(source = "manual") {
       message: MESSAGE.ALREADY_CHECKED_IN_TODAY,
       notify: source === "manual"
     });
+  }
+
+  // 저장된 cred가 없으면(최초 실행·저장소 초기화·헤더 미캡처 등) 공식 페이지가
+  // 로그인 후 남겨둔 쿠키에서 cred를 확보한다. 저장된 cred가 있을 때는 기존
+  // 동작을 그대로 두어(스니핑 우선) 회귀 위험을 만들지 않는다.
+  if (!saved.cred) {
+    const cookieCred = await getCredFromCookie();
+    if (cookieCred) {
+      // 검증 전이라 저장소에 쓰지 않고 이번 실행에서만 사용한다. 쿠키의 cred가
+      // 만료/무효여도 저장소를 오염시키지 않아, 다음 실행의 안내("공식 페이지
+      // 새로고침 필요")가 어긋나지 않는다. refresh가 새 cred를 돌려주면 기존
+      // 로직이 그때 저장한다.
+      saved.cred = cookieCred;
+      debugLog("performCheckin:cred-from-cookie", {});
+    }
   }
 
   if (!saved.cred) {
@@ -896,6 +918,30 @@ async function getAccountToken() {
     url: GAME_ORIGIN,
     name: "ACCOUNT_TOKEN"
   });
+}
+
+// 공식 페이지가 캐시해 둔 cred 쿠키를 읽는다. host_permissions에 game.skport.com이
+// 있어 chrome.cookies로 접근 가능하며, 쿠키가 없거나 오류면 빈 문자열을 돌려준다.
+async function getCredFromCookie() {
+  try {
+    const cookie = await chrome.cookies.get({
+      url: GAME_ORIGIN,
+      name: CRED_COOKIE_NAME
+    });
+    const raw = cookie?.value?.trim();
+    if (!raw) return "";
+
+    // 쿠키 값이 퍼센트 인코딩돼 있을 수 있어 best-effort로 디코딩한다(디코딩
+    // 실패 시 원본 사용). 헤더로 캡처하는 cred는 디코딩된 형태이므로 맞춘다.
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  } catch (error) {
+    debugLog("getCredFromCookie:error", { message: error?.message });
+    return "";
+  }
 }
 
 async function computeSign(path, body, timestamp, salt) {
