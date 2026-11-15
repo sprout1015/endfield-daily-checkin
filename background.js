@@ -1,6 +1,7 @@
 import { md5 } from "./lib/md5.js";
 import {
   MESSAGE,
+  RELOGIN_STATUSES,
   translateMessage,
   isAlreadyClaimedMessage,
   isGameRoleUnauthorizedMessage,
@@ -35,8 +36,7 @@ const MAX_DAILY_RETRY_ALARMS = 3;
 const MANUAL_CHECKIN_COOLDOWN_MS = 10000;
 const CHECKIN_LOCK_TTL_MS = 60000;
 const RETRYABLE_STATUSES = ["reward_not_granted", "server_busy", "network_error", "login_rate_limited", "error"];
-// 재로그인으로 해결되는 실패(세션 만료·자격 없음). 이 상태에서만 재로그인 안내 CTA를 띄운다.
-const RELOGIN_STATUSES = ["session_expired", "missing_credentials"];
+// 재로그인 CTA 대상 status는 shared/messages.js의 RELOGIN_STATUSES(단일 소스)를 쓴다.
 const SIGN_IN_URL = "https://game.skport.com/endfield/sign-in?header=0&hg_media=skport&hg_link_campaign=tools";
 const RELOGIN_NOTIFICATION_ID = "endfield-relogin";
 let activeCheckin = null;
@@ -608,12 +608,6 @@ async function parseApiResponse(response, fallbackMessage) {
 
     if (isEventUnavailableResponse(response, json)) {
       return eventUnavailableResponse(response, json);
-    }
-
-    // 위의 구체 분류에 걸리지 않은 401/403은 인증 실패로 간주해 session_expired로
-    // 처리한다(메시지 문구는 locale마다 달라 신뢰할 수 없음). 이래야 재로그인 안내가 뜬다.
-    if (response.status === 401 || response.status === 403) {
-      return sessionExpiredResponse(response, json);
     }
 
     const message = pickValue(json, ["message", "msg", "error"]) || response.statusText;

@@ -1,5 +1,6 @@
 import {
   MESSAGE,
+  RELOGIN_STATUSES,
   translateMessage,
   isAlreadyClaimedMessage,
   isGameRoleUnauthorizedMessage,
@@ -30,7 +31,7 @@ const notifySub = document.querySelector("#notifySub");
 const loginPageButton = document.querySelector("#loginPageButton");
 
 const SIGN_IN_URL = "https://game.skport.com/endfield/sign-in?header=0&hg_media=skport&hg_link_campaign=tools";
-const RELOGIN_STATUSES = ["session_expired", "missing_credentials"];
+// RELOGIN_STATUSES는 shared/messages.js에서 import(background와 동일 단일 소스).
 
 const TEXT = {
   enabled: "활성",
