@@ -610,6 +610,12 @@ async function parseApiResponse(response, fallbackMessage) {
       return eventUnavailableResponse(response, json);
     }
 
+    // 위의 구체 분류에 걸리지 않은 401/403은 인증 실패로 간주해 session_expired로
+    // 처리한다(메시지 문구는 locale마다 달라 신뢰할 수 없음). 이래야 재로그인 안내가 뜬다.
+    if (response.status === 401 || response.status === 403) {
+      return sessionExpiredResponse(response, json);
+    }
+
     const message = pickValue(json, ["message", "msg", "error"]) || response.statusText;
     throw new Error(`${fallbackMessage}: ${response.status} ${message}`);
   }
