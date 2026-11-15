@@ -20,6 +20,18 @@ export const MESSAGE = {
   UNKNOWN_CHECKIN_ERROR: "UNKNOWN_CHECKIN_ERROR"
 };
 
+// 공식 로그인/출석 페이지 재방문(재로그인·세션 갱신·계정 확인)으로 해결되는 실패 status.
+// 이 상태에서만 재로그인 안내 CTA/알림 버튼을 띄운다. background·popup이 공유한다.
+// 제외: login_rate_limited("지금은 다시 로그인하지 말라"라 CTA가 역효과), time_sync_required,
+//       reward_not_granted, server_busy, network_error, event_unavailable(재로그인과 무관).
+export const RELOGIN_STATUSES = [
+  "session_expired",       // 세션 만료 → 재로그인
+  "missing_credentials",   // 자격 없음 → 로그인 필요
+  "sign_error",            // 서명 검증 실패 → 공식 페이지 새로고침으로 cred 갱신
+  "role_mismatch",         // 계정 정보 불일치 → 로그아웃 후 재로그인
+  "game_role_not_linked"   // 게임 계정 미연동 → 공식 페이지에서 계정 확인
+];
+
 export const MESSAGE_TEXT = {
   OK: "출석 체크가 완료되었습니다.",
   [MESSAGE.CHECKIN_COMPLETED]: "출석 체크가 완료되었습니다.",
@@ -141,6 +153,9 @@ export function isSessionExpiredMessage(message) {
   return message.includes("登录")
     || message.includes("登陆")
     || message.includes("未授权")
+    || message.includes("로그인")   // "사용자가 로그인하지 않았습니다" 등 한글 인증 실패
+    || message.includes("인증")
+    || message.includes("세션")
     || lowerMessage.includes("login")
     || lowerMessage.includes("session")
     || lowerMessage.includes("expired")

@@ -1,6 +1,7 @@
 import { md5 } from "./lib/md5.js";
 import {
   MESSAGE,
+  RELOGIN_STATUSES,
   translateMessage,
   isAlreadyClaimedMessage,
   isGameRoleUnauthorizedMessage,
@@ -35,6 +36,9 @@ const MAX_DAILY_RETRY_ALARMS = 3;
 const MANUAL_CHECKIN_COOLDOWN_MS = 10000;
 const CHECKIN_LOCK_TTL_MS = 60000;
 const RETRYABLE_STATUSES = ["reward_not_granted", "server_busy", "network_error", "login_rate_limited", "error"];
+// 재로그인 CTA 대상 status는 shared/messages.js의 RELOGIN_STATUSES(단일 소스)를 쓴다.
+const SIGN_IN_URL = "https://game.skport.com/endfield/sign-in?header=0&hg_media=skport&hg_link_campaign=tools";
+const RELOGIN_NOTIFICATION_ID = "endfield-relogin";
 let activeCheckin = null;
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -80,6 +84,21 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
       lastCheckinAt: new Date().toISOString()
     });
   }
+});
+
+// 재로그인 안내 알림을 클릭하거나 버튼을 누르면 공식 로그인 페이지를 새 탭으로 연다.
+// 로그인하면 쿠키 변경 감지로 cred가 자동 수확되어 재인증이 완료된다(기존 메커니즘).
+function openSignInPage(notificationId) {
+  chrome.tabs.create({ url: SIGN_IN_URL });
+  if (notificationId) chrome.notifications.clear(notificationId);
+}
+
+chrome.notifications.onClicked.addListener((notifId) => {
+  if (notifId === RELOGIN_NOTIFICATION_ID) openSignInPage(notifId);
+});
+
+chrome.notifications.onButtonClicked.addListener((notifId) => {
+  if (notifId === RELOGIN_NOTIFICATION_ID) openSignInPage(notifId);
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -855,12 +874,20 @@ async function saveResult({ status, message, lastCheckinDate, notify = false }) 
     const enabled = notifyEnabled !== false; // 기본 ON(미설정이면 알림 표시)
     // 알림 ON이면 성공·실패 모두, OFF면 실패일 때만 띄운다.
     if (enabled || !isSuccess) {
-      chrome.notifications.create({
+      const needsRelogin = RELOGIN_STATUSES.includes(status);
+      const options = {
         type: "basic",
         iconUrl: "icons/icon128.png",
         title: "엔드필드 출석 체크",
         message: translateMessage(message)
-      });
+      };
+      if (needsRelogin) {
+        // 세션 만료 등 재로그인 필요 시 알림에서 바로 로그인 페이지로 갈 수 있게 버튼을 단다.
+        options.buttons = [{ title: "로그인 페이지 열기" }];
+        chrome.notifications.create(RELOGIN_NOTIFICATION_ID, options);
+      } else {
+        chrome.notifications.create(options);
+      }
     }
   }
 

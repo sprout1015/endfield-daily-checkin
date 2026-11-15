@@ -1,5 +1,6 @@
 import {
   MESSAGE,
+  RELOGIN_STATUSES,
   translateMessage,
   isAlreadyClaimedMessage,
   isGameRoleUnauthorizedMessage,
@@ -27,6 +28,10 @@ const checkButton = document.querySelector("#checkButton");
 const hintText = document.querySelector("#hintText");
 const notifyToggle = document.querySelector("#notifyToggle");
 const notifySub = document.querySelector("#notifySub");
+const loginPageButton = document.querySelector("#loginPageButton");
+
+const SIGN_IN_URL = "https://game.skport.com/endfield/sign-in?header=0&hg_media=skport&hg_link_campaign=tools";
+// RELOGIN_STATUSES는 shared/messages.js에서 import(background와 동일 단일 소스).
 
 const TEXT = {
   enabled: "활성",
@@ -50,7 +55,8 @@ const TEXT = {
   noSchedule: "자동 출석 꺼짐",
   error: "오류",
   notifyOnSub: "출석 결과를 알림으로 표시",
-  notifyOffSub: "실패했을 때만 알림"
+  notifyOffSub: "실패했을 때만 알림",
+  reloginHint: "세션이 만료됐어요. 로그인 페이지에서 다시 로그인하면 자동으로 복구됩니다."
 };
 
 const STATUS_LABELS = {
@@ -81,6 +87,9 @@ document.addEventListener("DOMContentLoaded", refreshStatus);
 checkButton.addEventListener("click", runManualCheckin);
 autoToggle.addEventListener("change", updateAutoCheckin);
 notifyToggle.addEventListener("change", updateNotify);
+loginPageButton.addEventListener("click", () => {
+  chrome.tabs.create({ url: SIGN_IN_URL });
+});
 
 async function refreshStatus() {
   setButtonBusy(false);
@@ -171,6 +180,14 @@ function renderStatus(status) {
   lastCheck.textContent = formatDateTime(status.lastCheckinAt);
 
   hintText.textContent = isCredentialReady(status) ? TEXT.ready : TEXT.visitPage;
+
+  // 재로그인으로 해결되는 실패(세션 만료·자격 없음)면 로그인 페이지 CTA를 주력으로 노출한다.
+  const needsRelogin = RELOGIN_STATUSES.includes(statusKey);
+  loginPageButton.hidden = !needsRelogin;
+  checkButton.hidden = needsRelogin;
+  if (needsRelogin) {
+    hintText.textContent = TEXT.reloginHint;
+  }
 
   if (tone === "warn") {
     todayBadge.classList.add("warn");
