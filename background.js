@@ -38,9 +38,13 @@ const RETRYABLE_STATUSES = ["reward_not_granted", "server_busy", "network_error"
 let activeCheckin = null;
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const { autoCheckinEnabled } = await chrome.storage.local.get("autoCheckinEnabled");
+  const { autoCheckinEnabled, notifyEnabled } =
+    await chrome.storage.local.get(["autoCheckinEnabled", "notifyEnabled"]);
   if (typeof autoCheckinEnabled !== "boolean") {
     await chrome.storage.local.set({ autoCheckinEnabled: true });
+  }
+  if (typeof notifyEnabled !== "boolean") {
+    await chrome.storage.local.set({ notifyEnabled: true });
   }
   scheduleDailyAlarm();
 });
@@ -91,6 +95,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "SET_AUTO_CHECKIN") {
     setAutoCheckin(Boolean(message.enabled)).then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === "SET_NOTIFY_ENABLED") {
+    setNotifyEnabled(Boolean(message.enabled)).then(sendResponse);
     return true;
   }
 
@@ -272,6 +281,7 @@ function isTodayCompleted(status) {
 async function getStatus() {
   const data = await chrome.storage.local.get([
     "autoCheckinEnabled",
+    "notifyEnabled",
     "cred",
     "roleId",
     "credentialsCapturedAt",
@@ -295,6 +305,7 @@ async function getStatus() {
     hasRoleId: Boolean(data.roleId),
     hasAccountToken: Boolean(accountToken?.value),
     autoCheckinEnabled: data.autoCheckinEnabled !== false,
+    notifyEnabled: data.notifyEnabled !== false,
     today: todayServerDate(),
     nextRunAt: new Date(nextCheckinTime()).toISOString()
   };
@@ -837,17 +848,24 @@ async function saveResult({ status, message, lastCheckinDate, notify = false }) 
 
   await chrome.storage.local.set(payload);
 
+  const isSuccess = ["success", "already_claimed", "already_done"].includes(status);
+
   if (notify) {
-    chrome.notifications.create({
-      type: "basic",
-      iconUrl: "icons/icon128.png",
-      title: "엔드필드 출석 체크",
-      message: translateMessage(message)
-    });
+    const { notifyEnabled } = await chrome.storage.local.get("notifyEnabled");
+    const enabled = notifyEnabled !== false; // 기본 ON(미설정이면 알림 표시)
+    // 알림 ON이면 성공·실패 모두, OFF면 실패일 때만 띄운다.
+    if (enabled || !isSuccess) {
+      chrome.notifications.create({
+        type: "basic",
+        iconUrl: "icons/icon128.png",
+        title: "엔드필드 출석 체크",
+        message: translateMessage(message)
+      });
+    }
   }
 
   return {
-    ok: ["success", "already_claimed", "already_done"].includes(status),
+    ok: isSuccess,
     status,
     message
   };
@@ -911,6 +929,13 @@ async function setAutoCheckin(enabled) {
   }
 
   return { ok: true, autoCheckinEnabled: enabled };
+}
+
+async function setNotifyEnabled(enabled) {
+  // 알림 ON/OFF 플래그만 저장한다(스케줄과 무관). OFF여도 saveResult가
+  // 실패 결과는 알림을 띄우므로 완전 무음이 아니라 "실패 알림만" 모드가 된다.
+  await chrome.storage.local.set({ notifyEnabled: enabled });
+  return { ok: true, notifyEnabled: enabled };
 }
 
 async function getAccountToken() {

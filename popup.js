@@ -25,6 +25,8 @@ const credentialState = document.querySelector("#credentialState");
 const lastCheck = document.querySelector("#lastCheck");
 const checkButton = document.querySelector("#checkButton");
 const hintText = document.querySelector("#hintText");
+const notifyToggle = document.querySelector("#notifyToggle");
+const notifySub = document.querySelector("#notifySub");
 
 const TEXT = {
   enabled: "활성",
@@ -46,7 +48,9 @@ const TEXT = {
   notDone: "오늘 미완료",
   doneSuffix: "출석 완료",
   noSchedule: "자동 출석 꺼짐",
-  error: "오류"
+  error: "오류",
+  notifyOnSub: "출석 결과를 알림으로 표시",
+  notifyOffSub: "실패했을 때만 알림"
 };
 
 const STATUS_LABELS = {
@@ -76,6 +80,7 @@ statusMessage.textContent = TEXT.loadingMessage;
 document.addEventListener("DOMContentLoaded", refreshStatus);
 checkButton.addEventListener("click", runManualCheckin);
 autoToggle.addEventListener("change", updateAutoCheckin);
+notifyToggle.addEventListener("change", updateNotify);
 
 async function refreshStatus() {
   setButtonBusy(false);
@@ -121,6 +126,22 @@ async function updateAutoCheckin() {
   }
 }
 
+async function updateNotify() {
+  notifyToggle.disabled = true;
+
+  try {
+    await sendMessage({
+      type: "SET_NOTIFY_ENABLED",
+      enabled: notifyToggle.checked
+    });
+    await refreshStatus();
+  } catch (error) {
+    renderError(error);
+  } finally {
+    notifyToggle.disabled = false;
+  }
+}
+
 function renderStatus(status) {
   const normalized = normalizeStatus(status);
   const statusKey = normalized.lastStatus || "idle";
@@ -139,6 +160,8 @@ function renderStatus(status) {
   autoTitle.textContent = status.autoCheckinEnabled ? TEXT.enabled : TEXT.disabled;
   autoSub.textContent = status.autoCheckinEnabled ? TEXT.enabledSub : TEXT.disabledSub;
   autoToggle.checked = status.autoCheckinEnabled;
+  notifyToggle.checked = status.notifyEnabled;
+  notifySub.textContent = status.notifyEnabled ? TEXT.notifyOnSub : TEXT.notifyOffSub;
 
   completionState.textContent = isComplete
     ? `${formatServerDate(completionDate)} ${TEXT.doneSuffix}`
